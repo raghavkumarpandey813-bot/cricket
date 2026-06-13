@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Cricket Scorer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            color: #333;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* Setup Team Card */
+        .setup-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .input-group label {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #666;
+        }
+
+        .input-group input {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .input-group input:focus {
+            border-color: #11998e;
+        }
+
+        .btn-start {
+            background-color: #11998e;
+            color: white;
+            padding: 12px 25px;
+            align-self: flex-end;
+            margin-top: 5px;
+        }
+
+        .btn-start:hover {
+            background-color: #0e8076;
+        }
+
+        /* Dashboard & Layout */
+        .main-layout {
+            opacity: 0.4;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .scoreboard-card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .team-names {
+            font-size: 1.6rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .batting-now {
+            font-size: 1rem;
+            color: #666;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .main-score {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: #11998e;
+            margin-bottom: 5px;
+        }
+
+        .overs-wickets {
+            font-size: 1.2rem;
+            color: #777;
+            margin-bottom: 15px;
+        }
+
+        .target-box {
+            font-size: 1.1rem;
+            background: #fff8e1;
+            color: #f57f17;
+            padding: 8px;
+            border-radius: 5px;
+            display: inline-block;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .stat-box p { font-size: 0.9rem; color: #666; }
+        .stat-box span { font-size: 1.4rem; font-weight: bold; color: #222; }
+
+        /* Controls */
+        .controls-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .controls-card h3 {
+            margin-bottom: 15px;
+            color: #444;
+            border-bottom: 2px solid #f0f2f5;
+            padding-bottom: 5px;
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            padding: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-run { background-color: #e3f2fd; color: #0d47a1; }
+        .btn-run:hover { background-color: #bbdefb; }
+        .btn-boundary { background-color: #e8f5e9; color: #1b5e20; }
+        .btn-boundary:hover { background-color: #c8e6c9; }
+        .btn-wicket { background-color: #ffebee; color: #b71c1c; grid-column: span 2; }
+        .btn-wicket:hover { background-color: #ffcdd2; }
+        .btn-dot { background-color: #eee; color: #333; grid-column: span 2; }
+        .btn-dot:hover { background-color: #ddd; }
+
+        .match-status {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #d32f2f;
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #ffebee;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Pro Cricket Scorer</h1>
+        <p id="match-meta">Enter match and team details to begin</p>
+    </header>
+
+    <div class="setup-card" id="setup-panel">
+        <div class="input-group">
+            <label for="team1-input">Team 1 (Batting First)</label>
+            <input type="text" id="team1-input" placeholder="e.g., India">
+        </div>
+        <div class="input-group">
+            <label for="team2-input">Team 2 (Bowling First)</label>
+            <input type="text" id="team2-input" placeholder="e.g., Australia">
+        </div>
+        <div class="input-group" style="flex: 0.5; min-width: 100px;">
+            <label for="overs-input">Match Overs</label>
+            <input type="number" id="overs-input" min="1" max="50" value="5" placeholder="5">
+        </div>
+        <button class="btn-start" onclick="startMatch()">Start Match</button>
+    </div>
+
+    <div class="main-layout" id="game-board">
+        <div class="scoreboard-card">
+            <div class="team-names" id="display-teams">Team 1 vs Team 2</div>
+            <div class="batting-now" id="display-batting-team">Batting: Team 1</div>
+            
+            <div class="main-score" id="display-score">0 / 0</div>
+            <div class="overs-wickets" id="display-overs">Overs: 0.0 (Max: -- Overs)</div>
+            
+            <div id="target-wrapper" style="display: none;">
+                <div class="target-box" id="display-target">Target: 00 Runs</div>
+            </div>
+
+            <div class="match-status" id="match-status"></div>
+
+            <div class="stats-grid">
+                <div class="stat-box"><p>Total Fours (4s)</p><span id="stat-fours">0</span></div>
+                <div class="stat-box"><p>Total Sixes (6s)</p><span id="stat-sixes">0</span></div>
+                <div class="stat-box"><p>Singles/Doubles/Triples</p><span id="stat-singles">0</span></div>
+                <div class="stat-box"><p>Quads/Pentas Run</p><span id="stat-high-runs">0</span></div>
+            </div>
+        </div>
+
+        <div class="controls-card" id="controls-panel">
+            <h3>Scorer Control Panel</h3>
+            
+            <div class="btn-group">
+                <button class="btn-run" onclick="addRuns(1)">+1 Run</button>
+                <button class="btn-run" onclick="addRuns(2)">+2 Runs</button>
+                <button class="btn-run" onclick="addRuns(3)">+3 Runs</button>
+                <button class="btn-dot" onclick="addRuns(0)">Dot Ball</button>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn-run" onclick="addRuns(4, true)">+4 (Run)</button>
+                <button class="btn-run" onclick="addRuns(5, true)">+5 (Run)</button>
+                <button class="btn-boundary" onclick="addBoundary(4)">4 (Boundary)</button>
+                <button class="btn-boundary" onclick="addBoundary(6)">6 (Boundary)</button>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn-wicket" onclick="takeWicket()">WICKET!</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Game Limit Rules
+    let maxOvers = 5;
+    let maxBalls = 30;
+    const maxWickets = 10;
+
+    // Match State Variables
+    let team1 = "Team 1";
+    let team2 = "Team 2";
+    let currentInnings = 1;
+    
+    let runs = 0;
+    let wickets = 0;
+    let balls = 0;
+    let team1FinalScore = 0;
+    let target = 0;
+
+    // Stats Counters
+    let countFours = 0, countSixes = 0, countSinglesMulti = 0, countHighRuns = 0;
+
+    function startMatch() {
+        const t1Input = document.getElementById('team1-input').value.trim();
+        const t2Input = document.getElementById('team2-input').value.trim();
+        const oversInput = parseInt(document.getElementById('overs-input').value, 10);
+
+        if(t1Input === "" || t2Input === "") {
+            alert("Please enter names for both teams!");
+            return;
+        }
+
+        if(isNaN(oversInput) || oversInput <= 0) {
+            alert("Please enter a valid number of overs (minimum 1)!");
+            return;
+        }
+
+        team1 = t1Input;
+        team2 = t2Input;
+        
+        // Dynamically assign over limits based on user input
+        maxOvers = oversInput;
+        maxBalls = maxOvers * 6;
+
+        // Visual Unlock
+        document.getElementById('setup-panel').style.display = "none";
+        document.getElementById('game-board').style.opacity = "1";
+        document.getElementById('game-board').style.pointerEvents = "auto";
+
+        initInnings();
+    }
+
+    function initInnings() {
+        runs = 0;
+        wickets = 0;
+        balls = 0;
+        countFours = 0; countSixes = 0; countSinglesMulti = 0; countHighRuns = 0;
+
+        document.getElementById('display-teams').innerText = `${team1} vs ${team2}`;
+        
+        if (currentInnings === 1) {
+            document.getElementById('match-meta').innerText = `Innings 1 - Setting the Target (${maxOvers} Overs)`;
+            document.getElementById('display-batting-team').innerText = `Batting Now: ${team1}`;
+        } else {
+            document.getElementById('match-meta').innerText = `Innings 2 - The Run Chase (${maxOvers} Overs)`;
+            document.getElementById('display-batting-team').innerText = `Batting Now: ${team2}`;
+            document.getElementById('target-wrapper').style.display = "block";
+            document.getElementById('display-target').innerText = `Target: ${target} runs required`;
+        }
+        updateScoreboard();
+    }
+
+    function updateScoreboard() {
+        let completedOvers = Math.floor(balls / 6);
+        let remainingBalls = balls % 6;
+        
+        document.getElementById('display-score').innerText = `${runs} / ${wickets}`;
+        document.getElementById('display-overs').innerText = `Overs: ${completedOvers}.${remainingBalls} (Max: ${maxOvers})`;
+        
+        document.getElementById('stat-fours').innerText = countFours;
+        document.getElementById('stat-sixes').innerText = countSixes;
+        document.getElementById('stat-singles').innerText = countSinglesMulti;
+        document.getElementById('stat-high-runs').innerText = countHighRuns;
+
+        checkMatchStatus();
+    }
+
+    function addRuns(amount, isRunPhysically = false) {
+        runs += amount;
+        balls++;
+        if (amount > 0 && amount <= 3) countSinglesMulti++;
+        else if (isRunPhysically && (amount === 4 || amount === 5)) countHighRuns++;
+        
+        updateScoreboard();
+    }
+
+    function addBoundary(boundaryType) {
+        runs += boundaryType;
+        balls++;
+        if (boundaryType === 4) countFours++;
+        else if (boundaryType === 6) countSixes++;
+        
+        updateScoreboard();
+    }
+
+    function takeWicket() {
+        wickets++;
+        balls++;
+        updateScoreboard();
+    }
+
+    function checkMatchStatus() {
+        if (currentInnings === 1) {
+            // First Innings Ends
+            if (wickets === maxWickets || balls === maxBalls) {
+                team1FinalScore = runs;
+                target = team1FinalScore + 1;
+                currentInnings = 2;
+                
+                alert(`${team1} Innings complete! ${team2} needs ${target} runs to win.`);
+                initInnings();
+            }
+        } else {
+            // Second Innings logic
+            if (runs >= target) {
+                endGame(`${team2} wins by ${maxWickets - wickets} wickets! 🎉`);
+            } else if (wickets === maxWickets || balls === maxBalls) {
+                if (runs === team1FinalScore) {
+                    endGame("Match Tied! Both teams scored exactly equal runs. 🤝");
+                } else {
+                    endGame(`${team1} wins by ${team1FinalScore - runs} runs! 🏆`);
+                }
+            }
+        }
+    }
+
+    function endGame(message) {
+        const statusElement = document.getElementById('match-status');
+        statusElement.style.display = "block";
+        statusElement.innerText = message;
+        
+        // Lock controls completely
+        document.getElementById('controls-panel').style.opacity = "0.4";
+        document.getElementById('controls-panel').style.pointerEvents = "none";
+    }
+</script>
+
+</body>
+</html>
